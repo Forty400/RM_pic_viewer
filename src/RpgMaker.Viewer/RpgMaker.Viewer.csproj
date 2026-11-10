@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon />
+    <StartupObject>RpgMaker.Viewer.App</StartupObject>
+    <AssemblyName>RpgMakerImageViewer</AssemblyName>
+    <Product>RPG Maker 图片阅读器</Product>
+    <Description>浏览 RPG Maker 加密图片，支持资源管理器缩略图与托盘驻留</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RpgMaker.Decrypt\RpgMaker.Decrypt.csproj" />
+  </ItemGroup>
+
+</Project>

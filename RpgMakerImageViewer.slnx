@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RpgMaker.Decrypt/RpgMaker.Decrypt.csproj" />
+    <Project Path="src/RpgMaker.Launcher/RpgMaker.Launcher.csproj" />
+    <Project Path="src/RpgMaker.Setup/RpgMaker.Setup.csproj" />
+    <Project Path="src/RpgMaker.ThumbnailProvider/RpgMaker.ThumbnailProvider.csproj" />
+    <Project Path="src/RpgMaker.Viewer/RpgMaker.Viewer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RpgMaker.Decrypt.Tests/RpgMaker.Decrypt.Tests.csproj" />
+  </Folder>
+</Solution>

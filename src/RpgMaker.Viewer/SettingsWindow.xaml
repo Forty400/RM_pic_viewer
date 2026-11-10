@@ -1,0 +1,35 @@
+<Window x:Class="RpgMaker.Viewer.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="设置"
+        Width="540"
+        Height="460"
+        WindowStartupLocation="CenterScreen"
+        Background="#F7F7F7"
+        ResizeMode="NoResize">
+  <DockPanel Margin="20">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+      <Button Content="卸载程序…" Width="100" Height="32" Margin="0,0,8,0" Click="Uninstall_Click" />
+      <Button Content="保存" Width="88" Height="32" Margin="0,0,8,0" IsDefault="True" Click="Save_Click" />
+      <Button Content="关闭" Width="88" Height="32" IsCancel="True" Click="Close_Click" />
+    </StackPanel>
+
+    <StackPanel>
+      <TextBlock FontSize="20" FontWeight="SemiBold" Text="设置 / 配置项" />
+
+      <TextBlock Margin="0,18,0,4" FontWeight="SemiBold" Text="安装位置" />
+      <TextBox x:Name="InstallPathBox" IsReadOnly="True" Height="30" VerticalContentAlignment="Center" Padding="6,0" />
+      <TextBlock Margin="0,6,0,0" Foreground="#666" FontSize="12" Text="安装路径在安装向导中指定；此处仅供查看。" />
+
+      <TextBlock Margin="0,18,0,8" FontWeight="SemiBold" Text="打开方式（目标：像普通图片一样双击打开）" />
+      <CheckBox x:Name="OptDoubleClick" Content="将 .rpgmvp / .png_ 关联到本程序（双击打开）" Margin="0,4" />
+      <CheckBox x:Name="OptShell" Content="启用资源管理器缩略图预览（大图标）" Margin="0,4" />
+      <TextBlock Margin="0,6,0,0" Foreground="#666" FontSize="12" TextWrapping="Wrap"
+                 Text="解密方式对齐 RPG-Maker-MV-Decrypter：无密钥也可还原 PNG 头。缩略图注册可能需要管理员权限。" />
+
+      <TextBlock Margin="0,18,0,8" FontWeight="SemiBold" Text="其它" />
+      <CheckBox x:Name="OptMinimizeTray" Content="关闭窗口时回到托盘（不退出）" Margin="0,4" />
+      <CheckBox x:Name="OptStartWithWindows" Content="开机时启动（托盘驻留）" Margin="0,4" />
+    </StackPanel>
+  </DockPanel>
+</Window>
