@@ -13,4 +13,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
+  <!-- Filled by tools/publish-release.ps1 before single-file Setup publish. -->
+  <ItemGroup Condition="Exists('embedded\payload.zip')">
+    <EmbeddedResource Include="embedded\payload.zip" LogicalName="payload.zip" />
+  </ItemGroup>
+
 </Project>

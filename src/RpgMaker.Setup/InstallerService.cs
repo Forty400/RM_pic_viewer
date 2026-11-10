@@ -12,29 +12,7 @@ internal sealed class InstallerService
 
     public InstallerService(Action<string> log) => _log = log;
 
-    public string ResolvePayloadRoot()
-    {
-        var baseDir = AppContext.BaseDirectory;
-        var candidates = new[]
-        {
-            Path.Combine(baseDir, "payload"),
-            Path.GetFullPath(Path.Combine(baseDir, "..", "payload")),
-            Path.GetFullPath(Path.Combine(baseDir, "..", "..", "payload")),
-            Path.Combine(baseDir, "RpgMakerImageViewer")
-        };
-
-        foreach (var candidate in candidates)
-        {
-            var rootExe = Path.Combine(candidate, InstallConstants.AppExeName);
-            var binExe = Path.Combine(candidate, "bin", InstallConstants.AppExeName);
-            var legacyApp = Path.Combine(candidate, "app", InstallConstants.AppExeName);
-            if (File.Exists(rootExe) || File.Exists(binExe) || File.Exists(legacyApp))
-                return candidate;
-        }
-
-        throw new DirectoryNotFoundException(
-            "未找到安装数据包（payload\\RpgMakerImageViewer.exe）。请使用官方发布包中的 Setup 程序。");
-    }
+    public string ResolvePayloadRoot() => PayloadLocator.Resolve();
 
     public static bool IsExistingInstall(string installPath)
     {
@@ -497,52 +475,33 @@ internal sealed class InstallerService
         var payloadBin = Path.Combine(payload, "bin");
         var payloadApp = Path.Combine(payload, "app");
         var payloadShell = Path.Combine(payload, "shell");
+        var appSrc = Path.Combine(payload, InstallConstants.AppExeName);
 
-        // Prefer new layout: launcher at payload root + bin\
-        var launcherSrc = Path.Combine(payload, InstallConstants.AppExeName);
-        if (File.Exists(launcherSrc) && Directory.Exists(payloadBin))
+        // Slim layout: single-file Viewer at payload root (no separate launcher/runtime bin).
+        if (File.Exists(appSrc) && !Directory.Exists(payloadBin))
         {
-            File.Copy(launcherSrc, Path.Combine(target, InstallConstants.AppExeName), overwrite: true);
+            File.Copy(appSrc, Path.Combine(target, InstallConstants.AppExeName), overwrite: true);
+            _log("已安装 RpgMakerImageViewer.exe");
+        }
+        else if (File.Exists(appSrc) && Directory.Exists(payloadBin))
+        {
+            File.Copy(appSrc, Path.Combine(target, InstallConstants.AppExeName), overwrite: true);
             _log("已安装启动入口 RpgMakerImageViewer.exe");
             CopyDirectory(payloadBin, Path.Combine(target, "bin"));
         }
         else if (Directory.Exists(payloadBin) && File.Exists(Path.Combine(payloadBin, InstallConstants.AppExeName)))
         {
-            // bin only — still create a note; copy bin and expect launcher missing
             CopyDirectory(payloadBin, Path.Combine(target, "bin"));
             _log("警告：缺少根目录启动器，请从 bin\\RpgMakerImageViewer.exe 启动");
         }
         else if (Directory.Exists(payloadApp) && File.Exists(Path.Combine(payloadApp, InstallConstants.AppExeName)))
         {
-            // Legacy app\ payload → place into bin\ for consistency
             CopyDirectory(payloadApp, Path.Combine(target, "bin"));
             _log("已按兼容模式安装到 bin\\");
         }
-        else if (File.Exists(launcherSrc))
-        {
-            // Very old flat payload: dump runtime into bin, keep only launcher name conflict —
-            // copy everything except shell into bin, then need separate launcher (skip).
-            Directory.CreateDirectory(Path.Combine(target, "bin"));
-            foreach (var file in Directory.GetFiles(payload))
-            {
-                var name = Path.GetFileName(file);
-                if (name.Equals("Uninstall.exe", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                File.Copy(file, Path.Combine(target, "bin", name), overwrite: true);
-            }
-            foreach (var dir in Directory.GetDirectories(payload))
-            {
-                var name = Path.GetFileName(dir);
-                if (name.Equals("shell", StringComparison.OrdinalIgnoreCase) ||
-                    name.Equals("bin", StringComparison.OrdinalIgnoreCase))
-                    continue;
-                CopyDirectory(dir, Path.Combine(target, "bin", name));
-            }
-            _log("已将程序文件放入 bin\\（旧版扁平包）");
-        }
         else
         {
-            throw new DirectoryNotFoundException("安装包内容不完整：缺少 RpgMakerImageViewer.exe / bin。");
+            throw new DirectoryNotFoundException("安装包内容不完整：缺少 RpgMakerImageViewer.exe。");
         }
 
         if (Directory.Exists(payloadShell))
@@ -555,7 +514,7 @@ internal sealed class InstallerService
             "【如何启动】\r\n" +
             "1. 双击本目录下的 RpgMakerImageViewer.exe\r\n" +
             "2. 或使用桌面 / 开始菜单的「RPG Maker 图片阅读器」快捷方式\r\n\r\n" +
-            "说明：bin、shell 是程序内部文件，一般不用打开。\r\n" +
+            "说明：shell 是缩略图组件目录，一般不用打开。\r\n" +
             "卸载请运行 Uninstall.exe。\r\n";
         File.WriteAllText(Path.Combine(target, "HowToStart.txt"), text);
     }

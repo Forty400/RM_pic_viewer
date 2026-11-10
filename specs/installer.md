@@ -27,15 +27,9 @@ Payload / install layout (easy to find the EXE):
 
 Setup package:
 
-```
-Installer/
-  RpgMakerImageViewer.Setup.exe
-  payload/
-    RpgMakerImageViewer.exe
-    HowToStart.txt
-    bin\
-    shell\
-```
+`RpgMakerImageViewer.Setup.exe` is a **single-file** installer with the payload
+embedded. Copy that one EXE anywhere and run it — no sibling `payload\` folder
+required. (`tools/publish-release.ps1` also writes `dist/Setup/` and a Setup zip.)
 
 Users launch via desktop shortcut or root `RpgMakerImageViewer.exe` — no `.bat`.
 
@@ -63,7 +57,7 @@ Overwrite/uninstall now:
 
 ## Uninstall
 
-- Self-contained `Uninstall.exe` is packaged into `payload\` and copied to install root (must be single-file; copying folder-Setup.exe alone will silently fail to start)
+- Self-contained `Uninstall.exe` is packaged into the install root (single-file)
 - Double-click `Uninstall.exe` (no args) or run with `/uninstall`
 - Settings window → 卸载程序…
 - Windows「应用和功能」entry (`HKCU\...\Uninstall\RpgMakerImageViewer`)

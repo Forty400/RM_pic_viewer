@@ -51,6 +51,11 @@ internal static class ShellRegistration
         if (!string.IsNullOrWhiteSpace(installPath) && Directory.Exists(installPath))
             return installPath;
 
+        // Single-file: BaseDirectory is a temp extract folder — prefer ProcessPath directory.
+        var processDir = Path.GetDirectoryName(Environment.ProcessPath);
+        if (!string.IsNullOrWhiteSpace(processDir) && Directory.Exists(Path.Combine(processDir, "shell")))
+            return processDir;
+
         var appDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (Directory.Exists(Path.Combine(appDir, "shell")))
             return appDir;

@@ -1,7 +1,39 @@
+# Build outputs
 **/bin/
 **/obj/
+**/out/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+
+# IDE / user local
 .vs/
+.idea/
 *.user
+*.userosscache
 *.suo
+*.rsuser
+*.sln.docstates
+
+# .NET / NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Publish / release artifacts — do NOT commit binaries (GitHub rejects files >100MB).
+# Distribute Setup / portable zips via GitHub Releases instead.
 dist/
+*.zip
+*.exe
+!tools/
+src/RpgMaker.Setup/embedded/
+
+# Test / decrypt scratch
 tests/testImg/_decrypted/
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
