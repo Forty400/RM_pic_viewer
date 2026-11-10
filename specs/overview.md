@@ -27,7 +27,10 @@ Windows-only reader for RPG Maker MV/MZ encrypted images (`.rpgmvp`, `.png_`). P
 
 ## Stack
 
-- .NET 8 (Windows)
-- Shared decrypt class library
-- WPF viewer EXE
+- .NET 8 (Windows), self-contained win-x64 publish for end users
+- Shared decrypt class library (`RpgMaker.Decrypt`)
+- Shared install/uninstall helpers (`RpgMaker.Install`)
+- WPF viewer EXE (+ tray; `Uninstall.exe` hard-links the same binary)
+- WPF Setup EXE with embedded payload (repo ships compressed `.7z`)
 - COM Shell thumbnail provider DLL
+

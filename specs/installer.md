@@ -1,5 +1,13 @@
 # Installer / Settings / Uninstall
 
+## Distribution
+
+- **GitHub 主目录**：`RpgMakerImageViewer.Setup.7z`（约 81MB，小于仓库 100MB 限制）  
+  解压后得到 `RpgMakerImageViewer.Setup.exe`。
+- **本地 / Releases**：`dist/RpgMakerImageViewer.Setup.exe`（单文件，已内嵌 payload）、便携 zip。
+
+`tools/publish-release.ps1` 会同时写出 `dist/` 产物，并在有 7-Zip 时更新仓库根的 `RpgMakerImageViewer.Setup.7z`。
+
 ## Installer (`RpgMakerImageViewer.Setup.exe`)
 
 Wizard steps:
@@ -14,22 +22,22 @@ Wizard steps:
    - Launch after install
 4. Progress / Done
 
-Payload / install layout (easy to find the EXE):
+Payload / install layout:
 
 ```
 {InstallPath}/
-  RpgMakerImageViewer.exe                    ← 唯一启动入口（启动器）
+  RpgMakerImageViewer.exe   ← 启动入口（自包含单文件）
+  Uninstall.exe             ← 硬链接到主程序（失败则复制）
   HowToStart.txt
-  Uninstall.exe
-  bin\                                       ← 程序本体与运行时（用户一般不用进）
-  shell\                                     ← 缩略图组件（用户一般不用进）
+  install.json
+  shell\                    ← 缩略图组件（用户一般不用打开）
 ```
 
 Setup package:
 
 `RpgMakerImageViewer.Setup.exe` is a **single-file** installer with the payload
 embedded. Copy that one EXE anywhere and run it — no sibling `payload\` folder
-required. (`tools/publish-release.ps1` also writes `dist/Setup/` and a Setup zip.)
+required.
 
 Users launch via desktop shortcut or root `RpgMakerImageViewer.exe` — no `.bat`.
 
@@ -37,23 +45,23 @@ Users launch via desktop shortcut or root `RpgMakerImageViewer.exe` — no `.bat
 
 Installing to a directory that already contains this product is supported:
 
-1. Detect existing install (`install.json` / launcher / `bin` / `Uninstall.exe`)
+1. Detect existing install (`install.json` / app exe / `Uninstall.exe`)
 2. Confirm with the user
 3. Close running `RpgMakerImageViewer` processes under that directory
-4. Clean `bin\` / `shell\` (and stale flat leftovers), then copy new files with overwrite
-5. Refresh shortcuts, uninstall registry, and optional associations
+4. Clean `shell\` / legacy `bin\` / `app\` (and stale flat leftovers), then copy new files with overwrite
+5. Refresh shortcuts, uninstall registry, hard-link `Uninstall.exe`, and optional associations
 
 Same-directory reinstall therefore upgrades in place.
 
-## File locks on `bin\`
+## File locks
 
-`bin\RpgMakerImageViewer.exe` is the running tray app. While it is open, Windows locks files under `bin\`, so delete/overwrite fails.
+The tray app locks `RpgMakerImageViewer.exe` while running.
 
 Overwrite/uninstall now:
 
 1. Force-close `RpgMakerImageViewer` processes for that install
-2. Retry deleting `bin\` / `shell\`
-3. If still locked, rename to `bin.old_*` and schedule delayed delete
+2. Retry deleting / replacing files
+3. If still locked, rename away and schedule delayed delete
 
 ## Uninstall
 
