@@ -1,4 +1,6 @@
-# RPG Maker Image Viewer (Windows)
+# RM_pic_viewer
+
+RPG Maker 图片预览程序（Windows）
 
 Decrypt and browse RPG Maker MV/MZ encrypted images (`.rpgmvp`, `.png_`) with Explorer thumbnails and a WPF viewer.
 
@@ -19,7 +21,7 @@ dotnet run --project src/RpgMaker.Viewer -c Release -- "D:\Games\MyGame\www\img\
 
 - 启动后右下角托盘驻留；右键可「打开图片」或「退出（释放内存）」
 - 关闭窗口 / Esc：回到托盘（不退出）
-- 左右键：同目录切图
+- 左右键：同目录切图（切换时保留当前缩放）
 
 ## 用户发布包
 
