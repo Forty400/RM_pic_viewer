@@ -6,6 +6,12 @@ Decrypt and browse RPG Maker MV/MZ encrypted images (`.rpgmvp`, `.png_`) with Ex
 
 Specs (SPDD): see [`specs/`](specs/).
 
+## 下载
+
+- [最新安装包 / 便携版（GitHub Releases）](https://github.com/Forty400/RM_pic_viewer/releases/latest)
+
+安装包与便携 zip 发布在 Releases，不放入仓库主目录（避免超过 GitHub 单文件 100MB 限制）。
+
 ## Build
 
 ```powershell
