@@ -1,5 +1,7 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
+
+using RpgMaker.Install;
 
 namespace RpgMaker.Setup;
 

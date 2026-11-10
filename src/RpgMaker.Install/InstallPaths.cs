@@ -1,8 +1,8 @@
 using System.IO;
 
-namespace RpgMaker.Setup;
+namespace RpgMaker.Install;
 
-internal static class InstallPaths
+public static class InstallPaths
 {
     /// <summary>User-facing entry EXE at install root (launcher).</summary>
     public static string GetViewerExe(string installRoot)

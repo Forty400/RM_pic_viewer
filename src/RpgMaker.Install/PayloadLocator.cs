@@ -3,13 +3,13 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
 
-namespace RpgMaker.Setup;
+namespace RpgMaker.Install;
 
 /// <summary>
 /// Finds install payload beside the Setup EXE, as payload.zip, or as an embedded resource.
 /// Single-file publish uses a temp BaseDirectory — always prefer ProcessPath.
 /// </summary>
-internal static class PayloadLocator
+public static class PayloadLocator
 {
     private const string EmbeddedName = "payload.zip";
 

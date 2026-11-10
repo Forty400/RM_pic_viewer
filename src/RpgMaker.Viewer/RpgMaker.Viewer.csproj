@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RpgMaker.Decrypt\RpgMaker.Decrypt.csproj" />
+    <ProjectReference Include="..\RpgMaker.Install\RpgMaker.Install.csproj" />
   </ItemGroup>
 
 </Project>

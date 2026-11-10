@@ -22,11 +22,12 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
-# Publish / release artifacts — do NOT commit binaries (GitHub rejects files >100MB).
-# Distribute Setup / portable zips via GitHub Releases instead.
+# Publish / release artifacts — raw Setup/exe/zip stay local (often >100MB).
+# Repo root may host a compressed Setup (.7z, under 100MB) for direct download.
 dist/
 *.zip
 *.exe
+!RpgMakerImageViewer.Setup.7z
 !tools/
 src/RpgMaker.Setup/embedded/
 

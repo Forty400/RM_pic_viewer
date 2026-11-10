@@ -4,9 +4,9 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Win32;
 
-namespace RpgMaker.Setup;
+namespace RpgMaker.Install;
 
-internal sealed class InstallerService
+public sealed class InstallerService
 {
     private readonly Action<string> _log;
 
@@ -48,29 +48,19 @@ internal sealed class InstallerService
         //   shell\
         InstallFromPayload(payload, target);
 
-        // Prefer packaged single-file Uninstall.exe from payload (has its own runtime).
-        // Do NOT copy the running Setup.exe alone — folder-published Setup would miss DLLs and appear to "do nothing".
+        // One runtime copy: Uninstall.exe hard-links (or copies) the Viewer EXE.
+        // Viewer enters uninstall mode when started as Uninstall.exe or with /uninstall.
         var uninstallExe = Path.Combine(target, "Uninstall.exe");
-        var packagedUninstall = Path.Combine(payload, "Uninstall.exe");
-        if (File.Exists(packagedUninstall))
-        {
-            File.Copy(packagedUninstall, uninstallExe, overwrite: true);
-            _log("已写入 Uninstall.exe（自包含卸载程序）");
-        }
-        else
-        {
-            // Fallback: publish-time missing — try copying current process if it is single-file enough
-            var setupSrc = Environment.ProcessPath
-                ?? Path.Combine(AppContext.BaseDirectory, "RpgMakerImageViewer.Setup.exe");
-            File.Copy(setupSrc, uninstallExe, overwrite: true);
-            _log("已写入 Uninstall.exe（回退复制安装器；若无反应请用完整安装包重装）");
-        }
+        var viewerExe = Path.Combine(target, InstallConstants.AppExeName);
+        if (!File.Exists(viewerExe))
+            viewerExe = InstallPaths.GetViewerExe(target);
+        WriteUninstallEntry(viewerExe, uninstallExe);
 
         WriteHowToStart(target);
         WriteInstallMeta(target, options);
         WriteAppSettings(target, options);
 
-        var viewerExe = InstallPaths.GetViewerExe(target);
+        viewerExe = InstallPaths.GetViewerExe(target);
         var viewerDir = target; // launcher lives at install root
 
         if (options.CreateStartMenuShortcut)
@@ -389,13 +379,71 @@ internal sealed class InstallerService
             if (File.Exists(p)) return p;
         }
 
-        // When running as Uninstall.exe inside install dir
-        var local = Path.Combine(AppContext.BaseDirectory, "install.json");
-        if (File.Exists(local)) return local;
+        // Prefer ProcessPath dir — single-file extract uses a temp AppContext.BaseDirectory.
+        foreach (var dir in GetInstallSearchDirs())
+        {
+            var local = Path.Combine(dir, "install.json");
+            if (File.Exists(local))
+                return local;
+        }
 
-        var parent = Path.Combine(AppContext.BaseDirectory, "..", "install.json");
-        parent = Path.GetFullPath(parent);
-        return File.Exists(parent) ? parent : null;
+        return null;
+    }
+
+    private static List<string> GetInstallSearchDirs()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var list = new List<string>();
+
+        void Collect(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return;
+            try
+            {
+                var full = Path.GetFullPath(path);
+                if (seen.Add(full))
+                    list.Add(full);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        var processPath = Environment.ProcessPath;
+        if (!string.IsNullOrWhiteSpace(processPath))
+            Collect(Path.GetDirectoryName(processPath));
+
+        Collect(AppContext.BaseDirectory);
+        if (!string.IsNullOrWhiteSpace(AppContext.BaseDirectory))
+            Collect(Path.Combine(AppContext.BaseDirectory, ".."));
+
+        return list;
+    }
+
+    private void WriteUninstallEntry(string viewerExe, string uninstallExe)
+    {
+        if (!File.Exists(viewerExe))
+            throw new FileNotFoundException("安装后缺少主程序，无法创建卸载入口。", viewerExe);
+
+        try
+        {
+            if (File.Exists(uninstallExe))
+                File.Delete(uninstallExe);
+        }
+        catch
+        {
+            // overwrite via copy below if delete failed
+        }
+
+        if (NativeMethods.CreateHardLink(uninstallExe, viewerExe, IntPtr.Zero))
+        {
+            _log("已写入 Uninstall.exe（硬链接到主程序，不额外占用磁盘）");
+            return;
+        }
+
+        File.Copy(viewerExe, uninstallExe, overwrite: true);
+        _log("已写入 Uninstall.exe（硬链接失败，已复制主程序；磁盘占用约两倍）");
     }
 
     private void WriteInstallMeta(string target, InstallOptions options)
@@ -620,6 +668,12 @@ internal sealed class InstallerService
             int dwFlags,
             StringBuilder lpExeName,
             ref int lpdwSize);
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        public static extern bool CreateHardLink(
+            string lpFileName,
+            string lpExistingFileName,
+            IntPtr lpSecurityAttributes);
     }
 
     private static void RunRegSvr32(string comhost, bool unregister)

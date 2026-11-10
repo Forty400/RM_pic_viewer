@@ -13,6 +13,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RpgMaker.Install\RpgMaker.Install.csproj" />
+  </ItemGroup>
+
   <!-- Filled by tools/publish-release.ps1 before single-file Setup publish. -->
   <ItemGroup Condition="Exists('embedded\payload.zip')">
     <EmbeddedResource Include="embedded\payload.zip" LogicalName="payload.zip" />

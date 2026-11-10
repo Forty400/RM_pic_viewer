@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/RpgMaker.Decrypt/RpgMaker.Decrypt.csproj" />
+    <Project Path="src/RpgMaker.Install/RpgMaker.Install.csproj" />
     <Project Path="src/RpgMaker.Launcher/RpgMaker.Launcher.csproj" />
     <Project Path="src/RpgMaker.Setup/RpgMaker.Setup.csproj" />
     <Project Path="src/RpgMaker.ThumbnailProvider/RpgMaker.ThumbnailProvider.csproj" />

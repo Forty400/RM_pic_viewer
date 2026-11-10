@@ -1,7 +1,9 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using Forms = System.Windows.Forms;
+
+using RpgMaker.Install;
 
 namespace RpgMaker.Setup;
 

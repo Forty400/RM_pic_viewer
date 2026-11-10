@@ -8,9 +8,10 @@ Specs (SPDD): see [`specs/`](specs/).
 
 ## 下载
 
-- [最新安装包 / 便携版（GitHub Releases）](https://github.com/Forty400/RM_pic_viewer/releases/latest)
+- [仓库主目录安装包（7z，小于 100MB）](https://github.com/Forty400/RM_pic_viewer/raw/main/RpgMakerImageViewer.Setup.7z) — 解压后运行 `RpgMakerImageViewer.Setup.exe`
+- [GitHub Releases（安装包 / 便携版）](https://github.com/Forty400/RM_pic_viewer/releases/latest)
 
-安装包与便携 zip 发布在 Releases，不放入仓库主目录（避免超过 GitHub 单文件 100MB 限制）。
+说明：未压缩的 Setup 单文件约 130MB+，超过 GitHub 仓库 100MB 限制，故主目录提供 **7z**；完整 zip 仍可走 Releases。
 
 ## Build
 

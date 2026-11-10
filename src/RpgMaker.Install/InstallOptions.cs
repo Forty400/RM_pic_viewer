@@ -1,8 +1,8 @@
 using System.IO;
 
-namespace RpgMaker.Setup;
+namespace RpgMaker.Install;
 
-internal sealed class InstallOptions
+public sealed class InstallOptions
 {
     public string InstallPath { get; set; } = DefaultInstallPath();
     public bool CreateDesktopShortcut { get; set; } = true;

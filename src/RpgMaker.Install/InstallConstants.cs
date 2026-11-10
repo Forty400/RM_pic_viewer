@@ -1,6 +1,6 @@
-namespace RpgMaker.Setup;
+namespace RpgMaker.Install;
 
-internal static class InstallConstants
+public static class InstallConstants
 {
     public const string ProductName = "RPG Maker 图片阅读器";
     public const string Publisher = "RpgMakerImageViewer";

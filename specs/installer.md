@@ -57,8 +57,8 @@ Overwrite/uninstall now:
 
 ## Uninstall
 
-- Self-contained `Uninstall.exe` is packaged into the install root (single-file)
-- Double-click `Uninstall.exe` (no args) or run with `/uninstall`
+- `Uninstall.exe` is a **hard link** to `RpgMakerImageViewer.exe` (one self-contained runtime; copy fallback if hard link fails)
+- Double-click `Uninstall.exe` (no args) or run with `/uninstall` — Viewer enters uninstall mode
 - Settings window → 卸载程序…
 - Windows「应用和功能」entry (`HKCU\...\Uninstall\RpgMakerImageViewer`)
 

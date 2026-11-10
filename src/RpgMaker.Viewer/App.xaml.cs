@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Threading;
 using System.Windows;
+using RpgMaker.Install;
 
 namespace RpgMaker.Viewer;
 
@@ -15,6 +16,13 @@ public partial class App : System.Windows.Application
 
     private void Application_Startup(object sender, StartupEventArgs e)
     {
+        if (IsUninstallMode(e.Args))
+        {
+            RunUninstallMode();
+            Shutdown();
+            return;
+        }
+
         var path = e.Args.FirstOrDefault(a => !a.StartsWith('/') && !a.StartsWith('-'));
 
         _mutex = new Mutex(true, @"Local\RpgMakerImageViewer.SingleInstance", out var createdNew);
@@ -153,6 +161,49 @@ public partial class App : System.Windows.Application
             action();
         else
             Dispatcher.Invoke(action);
+    }
+
+    private static bool IsUninstallMode(string[] args)
+    {
+        if (args.Any(a =>
+                a.Equals("/uninstall", StringComparison.OrdinalIgnoreCase) ||
+                a.Equals("--uninstall", StringComparison.OrdinalIgnoreCase) ||
+                a.Equals("/u", StringComparison.OrdinalIgnoreCase)))
+            return true;
+
+        var exeName = Path.GetFileNameWithoutExtension(Environment.ProcessPath ?? "");
+        return exeName.Equals("Uninstall", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void RunUninstallMode()
+    {
+        var path = InstallerService.TryGetInstalledPath() ?? "(未检测到安装路径)";
+        var confirm = System.Windows.MessageBox.Show(
+            $"确定要卸载「RPG Maker 图片阅读器」吗？\n\n安装位置：{path}",
+            "卸载",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.None);
+        if (confirm != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            var log = new System.Text.StringBuilder();
+            new InstallerService(msg => log.AppendLine(msg)).Uninstall();
+            System.Windows.MessageBox.Show(
+                "卸载完成。\n\n" + log.ToString().Trim(),
+                "卸载",
+                MessageBoxButton.OK,
+                MessageBoxImage.None);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                "卸载失败：\n" + ex.Message,
+                "卸载",
+                MessageBoxButton.OK,
+                MessageBoxImage.None);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

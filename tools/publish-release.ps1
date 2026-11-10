@@ -19,6 +19,8 @@ $setupProj = Join-Path $root "src\RpgMaker.Setup\RpgMaker.Setup.csproj"
 $embeddedDir = Join-Path $root "src\RpgMaker.Setup\embedded"
 $embeddedZip = Join-Path $embeddedDir "payload.zip"
 
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 # Shared single-file flags: one runtime copy + LZ compression (major size win).
 $sfProps = @(
     "-p:PublishSingleFile=true",
@@ -35,6 +37,24 @@ function Write-TextFile([string]$Path, [string]$Content) {
 
 function Format-Mb([long]$bytes) {
     return ("{0:N1} MB" -f ($bytes / 1MB))
+}
+
+function New-ZipFromDirectory([string]$SourceDir, [string]$ZipPath, [bool]$includeBaseDirectory) {
+    if (Test-Path $ZipPath) { Remove-Item $ZipPath -Force }
+    # Copy first to avoid AV/file locks on freshly published EXEs.
+    $stage = Join-Path $env:TEMP ("rpg-zip-" + [guid]::NewGuid().ToString("N"))
+    try {
+        New-Item -ItemType Directory -Force -Path $stage | Out-Null
+        Copy-Item (Join-Path $SourceDir "*") $stage -Recurse -Force
+        [System.IO.Compression.ZipFile]::CreateFromDirectory(
+            $stage,
+            $ZipPath,
+            [System.IO.Compression.CompressionLevel]::Optimal,
+            $includeBaseDirectory)
+    }
+    finally {
+        if (Test-Path $stage) { Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 Write-Host "Cleaning dist..."
@@ -64,18 +84,8 @@ dotnet publish $thumbProj -c $Configuration -r $Runtime --self-contained false `
     -o (Join-Path $payloadStage "shell")
 if ($LASTEXITCODE -ne 0) { throw "ThumbnailProvider publish failed." }
 
-Write-Host "Publishing Uninstall.exe (single-file, compressed, no payload embed) ..."
-$uninstallOut = Join-Path $env:TEMP ("rpg-uninstall-out-" + [guid]::NewGuid().ToString("N"))
-dotnet publish $setupProj -c $Configuration -r $Runtime --self-contained true `
-    @sfProps `
-    -p:AssemblyName=Uninstall `
-    -o $uninstallOut
-if ($LASTEXITCODE -ne 0) { throw "Uninstall publish failed." }
-$builtUninstall = Get-ChildItem $uninstallOut -Filter "Uninstall.exe" | Select-Object -First 1
-if (-not $builtUninstall) { throw "Uninstall.exe not produced." }
-Copy-Item $builtUninstall.FullName (Join-Path $payloadStage "Uninstall.exe") -Force
-Write-Host ("  Uninstall: " + (Format-Mb $builtUninstall.Length))
-Remove-Item $uninstallOut -Recurse -Force -ErrorAction SilentlyContinue
+# Uninstall.exe is created at install time as a hard link to the Viewer (one runtime copy).
+# Portable zip ships Viewer only; users delete the folder to remove.
 
 $howTo = @"
 【如何启动】
@@ -83,20 +93,19 @@ $howTo = @"
 2. 或使用桌面 / 开始菜单快捷方式
 
 说明：shell 是缩略图组件，一般不用打开。
+安装版卸载请运行 Uninstall.exe（与主程序硬链接，不额外占磁盘）。
 "@
 Write-TextFile (Join-Path $payloadStage "HowToStart.txt") $howTo
 
 Write-Host "Packing payload.zip for embedded Setup ..."
 New-Item -ItemType Directory -Force -Path $embeddedDir | Out-Null
-if (Test-Path $embeddedZip) { Remove-Item $embeddedZip -Force }
-Compress-Archive -Path (Join-Path $payloadStage "*") -DestinationPath $embeddedZip -Force
+New-ZipFromDirectory $payloadStage $embeddedZip $false
 Write-Host ("  payload.zip: " + (Format-Mb (Get-Item $embeddedZip).Length))
 
 Write-Host "Publishing Setup.exe (single-file + embedded payload, compressed) ..."
 $setupBuildOut = Join-Path $env:TEMP ("rpg-setup-out-" + [guid]::NewGuid().ToString("N"))
 dotnet publish $setupProj -c $Configuration -r $Runtime --self-contained true `
     @sfProps `
-    -p:AssemblyName=RpgMakerImageViewer.Setup `
     -o $setupBuildOut
 if ($LASTEXITCODE -ne 0) { throw "Setup publish failed." }
 
@@ -119,6 +128,7 @@ Write-TextFile (Join-Path $setupOutDir "README.txt") $setupReadme
 Write-TextFile (Join-Path $distRoot "README-SETUP.txt") $setupReadme
 
 Write-Host "Creating portable folder..."
+if (Test-Path $portable) { Remove-Item $portable -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $portable | Out-Null
 Copy-Item (Join-Path $payloadStage "*") $portable -Recurse -Force
 Copy-Item (Join-Path $root "README.md") (Join-Path $portable "README.md") -Force
@@ -135,13 +145,13 @@ if (-not $SkipZip) {
             }
         }
     }
-    Compress-Archive -Path $portable -DestinationPath $zipPortable -Force
+    New-ZipFromDirectory $portable $zipPortable $true
     $setupZipStage = Join-Path $distRoot "_setup_zip"
     if (Test-Path $setupZipStage) { Remove-Item $setupZipStage -Recurse -Force }
     New-Item -ItemType Directory -Force -Path $setupZipStage | Out-Null
     Copy-Item (Join-Path $setupOutDir $setupExeName) $setupZipStage -Force
     Copy-Item (Join-Path $setupOutDir "README.txt") $setupZipStage -Force
-    Compress-Archive -Path (Join-Path $setupZipStage "*") -DestinationPath $zipSetup -Force
+    New-ZipFromDirectory $setupZipStage $zipSetup $false
     Remove-Item $setupZipStage -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "ZIP portable: $zipPortable (" (Format-Mb (Get-Item $zipPortable).Length) ")"
     Write-Host "ZIP setup:    $zipSetup (" (Format-Mb (Get-Item $zipSetup).Length) ")"
@@ -150,7 +160,35 @@ if (-not $SkipZip) {
 Remove-Item $payloadStage -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $embeddedZip -Force -ErrorAction SilentlyContinue
 
+# Repo-root 7z for GitHub main (<100MB). Prefer 7-Zip; skip if unavailable.
+$repoSetup7z = Join-Path $root "RpgMakerImageViewer.Setup.7z"
+$sevenZip = @(
+    "${env:ProgramFiles}\7-Zip\7z.exe",
+    "${env:ProgramFiles(x86)}\7-Zip\7z.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($sevenZip) {
+    Write-Host "Packing repo-root Setup.7z (mx=9) ..."
+    $zStage = Join-Path $env:TEMP ("rpg-setup7z-" + [guid]::NewGuid().ToString("N"))
+    try {
+        New-Item -ItemType Directory -Force -Path $zStage | Out-Null
+        Copy-Item (Join-Path $distRoot $setupExeName) (Join-Path $zStage $setupExeName) -Force
+        Copy-Item (Join-Path $setupOutDir "README.txt") (Join-Path $zStage "README.txt") -Force
+        if (Test-Path $repoSetup7z) { Remove-Item $repoSetup7z -Force }
+        & $sevenZip a -t7z -mx=9 $repoSetup7z (Join-Path $zStage "*") | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "7z packing failed." }
+        Write-Host ("  " + $repoSetup7z + "  (" + (Format-Mb (Get-Item $repoSetup7z).Length) + ")")
+    }
+    finally {
+        if (Test-Path $zStage) { Remove-Item $zStage -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+}
+else {
+    Write-Warning "7-Zip not found; skipped RpgMakerImageViewer.Setup.7z (needed for GitHub main <100MB)."
+}
+
 Write-Host ""
 Write-Host "Single-file Setup (move anywhere):"
 Write-Host ("  " + (Join-Path $distRoot $setupExeName) + "  (" + (Format-Mb (Get-Item (Join-Path $distRoot $setupExeName)).Length) + ")")
+Write-Host "Portable folder:"
+Write-Host ("  " + $portable + "  (" + (Format-Mb ((Get-ChildItem $portable -Recurse -File | Measure-Object Length -Sum).Sum)) + ")")
 Write-Host "Done."
